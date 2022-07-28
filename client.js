@@ -23,8 +23,7 @@ form.addEventListener('submit', function(e) {
 });
 
 function join() {
-    var user_str = JSON.stringify(User);
-    socket.emit('join', user_str, roomElement.value, usernameElement.value);
+    socket.emit('join', roomElement.value, usernameElement.value);
     roomElement.value = '';
     usernameElement.value = '';
 }
@@ -36,6 +35,12 @@ socket.on('start', function (data) {
         User.id = d.id;
         User.room = d.room;
     }
+    const result = usersDB.find();
+    //console.log(result);
+    while (result.hasNext()) {
+      console.log("holi");
+      System.out.println(result.next());
+    }
 })
 
 socket.on('chat message', function (msg) {
@@ -46,9 +51,8 @@ socket.on('chat message', function (msg) {
     window.scrollTo(0, document.body.scrollHeight);
 });
 
-socket.on('join', function (user, room, username) {
-    var user_str = JSON.parse(user);
-    if(user_str.id == User.id){
+socket.on('join', function (id, room, username) {
+    if(id == User.id){
         console.log("Joining room: ", room);
         User.room = room;
         User.username = username;

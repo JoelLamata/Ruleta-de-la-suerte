@@ -1,6 +1,5 @@
 //Database
 const { MongoClient } = require("mongodb");
-const password = require("./sensitiveinfo").password;
 
 // Replace the uri string with your connection string.
 const uri = require("./sensitiveinfo").uri;
@@ -17,7 +16,6 @@ var User = {
 
 async function findUser(id) {
   try {
-    // Query for a movie that has the title 'Back to the Future'
     const query = { id: id };
     //console.log(query);
     const result = await usersDB.countDocuments(query) > 0;
@@ -28,9 +26,9 @@ async function findUser(id) {
 }
 async function addUser() {
   try {
-    for(i = 0; i < i+1; i++){ 
+    for (i = 0; i < i + 1; i++) {
       var res = await findUser(i);
-      if(res == false){
+      if (res == false) {
         User.id = i;
         break;
       }
@@ -40,11 +38,10 @@ async function addUser() {
   }
   catch (e) { }
 }
-function deleteUser(id) {
+async function deleteUser(id) {
   try {
-    // Query for a movie that has title "Annie Hall"
     const query = { id: id };
-    const result = movies.deleteOne(query);
+    const result = await usersDB.deleteOne(query);
     if (result.deletedCount === 1) {
       console.log("Successfully deleted one document.");
     } else {
@@ -60,15 +57,32 @@ function createUser() {
   //console.log("User id:", User.id);
   var user_str = JSON.stringify(User);
   io.emit('start', user_str);
-
 }
 
-function disconnectUser() {
-
+async function changeRoom(id, room) {
+  room = Number(room);
+  User.room = room;
+  try {
+    const query = { id: id };
+    //console.log(query);
+    const result = await usersDB.updateOne(query, { $set: User });
+    //console.log(result);
+  }
+  catch (e) { }
 }
 
-function changeRoom(id, room) {
-
+function getUsersFromRoom(room) {
+  try {
+    //const query = { room: Number(room) };
+    //console.log(query);  
+    const result = usersDB.find();
+    //console.log(result);
+    while (result.hasNext()) {
+      console.log("holi");
+      System.out.println(result.next());
+    }
+  }
+  catch (e) { }
 }
 
 //Server
@@ -95,16 +109,17 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('user:', User.id, ' disconnected');
-    disconnectUser();
+    deleteUser(User.id);
   });
 
-  socket.on('join', (user, room, username) => {
-    var user_str = JSON.parse(user);
-    console.log("User: ", user_str.id, ", joining room: ", room);
-    socket.leave(user_str.room);
-    changeRoom(user_str.id, room);
+  socket.on('join', (room, username) => {
+    console.log(`User: ${User.id}, with username: ${username}, joining room: ${room}`);
+    User.username = username;
+    socket.leave(User.room);
+    changeRoom(User.id, room);
     socket.join(room);
-    io.emit('join', user, room, username);
+    getUsersFromRoom(room);
+    io.emit('join', User.id, room, username);
   });
 
   socket.on('chat message', (user, msg) => {
