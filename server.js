@@ -26,7 +26,7 @@ async function findUser(id) {
 }
 async function addUser() {
   try {
-    for (i = 0; i < i + 1; i++) {
+    for (i = 0; i < i + 1; i++) { //CUIDAO
       var res = await findUser(i);
       if (res == false) {
         User.id = i;
@@ -52,13 +52,24 @@ async function deleteUser(id) {
 }
 
 function createUser() {
-  User.room = 1;
-  addUser(User);
-  //console.log("User id:", User.id);
-  var user_str = JSON.stringify(User);
-  io.emit('start', user_str);
+  User.room = 0;
+  (async () => {
+    await addUser(User);
+    console.log("User id:", User.id);
+    var user_str = JSON.stringify(User);
+    io.emit('start', user_str);
+  })()
 }
-
+async function changeUsername(username) {
+  User.username = username;
+  try {
+    const query = { id: User.id };
+    //console.log(query);
+    const result = await usersDB.updateOne(query, { $set: User });
+    //console.log(result);
+  }
+  catch (e) { }
+}
 async function changeRoom(id, room) {
   room = Number(room);
   User.room = room;
@@ -71,16 +82,24 @@ async function changeRoom(id, room) {
   catch (e) { }
 }
 
-function getUsersFromRoom(room) {
+async function getUsersFromRoom(room) {
   try {
-    //const query = { room: Number(room) };
-    //console.log(query);  
-    const result = usersDB.find();
-    //console.log(result);
-    while (result.hasNext()) {
-      console.log("holi");
-      System.out.println(result.next());
+    const query = { room: Number(room) };
+    var result = await usersDB.find(query).toArray();
+    //console.log("res:", result);
+    return result;
+  }
+  catch (e) { }
+}
+
+async function findEmptyRoom() {
+  try {
+    for (i = 1; i < 10; i++) {
+      var result = await usersDB.countDocuments({ room: i });
+      if (result == 0) break;
     }
+    //console.log("result:", result, "room:", i);
+    return i;
   }
   catch (e) { }
 }
@@ -105,7 +124,7 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('a user connected');
   createUser();
-  socket.join(1);
+  socket.join(0);
 
   socket.on('disconnect', () => {
     console.log('user:', User.id, ' disconnected');
@@ -113,19 +132,36 @@ io.on('connection', (socket) => {
   });
 
   socket.on('join', (room, username) => {
-    console.log(`User: ${User.id}, with username: ${username}, joining room: ${room}`);
-    User.username = username;
-    socket.leave(User.room);
-    changeRoom(User.id, room);
-    socket.join(room);
-    getUsersFromRoom(room);
-    io.emit('join', User.id, room, username);
+    (async () => {
+      console.log(`User: ${User.id}, with username: ${username}, joining room: ${room}`);
+      User.username = username;
+      socket.leave(User.room);
+      await changeRoom(User.id, room);
+      socket.join(room);
+
+      var result = await getUsersFromRoom(room);
+      var users = JSON.stringify(result);
+      io.emit('join', User.id, room, username, users);
+    })()
   });
 
   socket.on('chat message', (user, msg) => {
     console.log(user, msg);
     var user_str = JSON.parse(user);
     io.to(user_str.room).emit('chat message', msg);
+  });
+
+  socket.on('create', (username) => {
+    (async () => {
+      await changeUsername(username);
+      var room = await findEmptyRoom();
+      console.log("User:", User.id, "creating room:", room);
+      socket.leave(User.room);
+      changeRoom(User.id, room);
+      User.room = room;
+      socket.join(room);
+      io.to(User.room).emit('create', User.id, room, username);
+    })()
   });
 });
 

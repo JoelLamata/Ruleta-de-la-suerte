@@ -2,20 +2,22 @@
 <html>
 
 <head>
-    <title>Socket.IO chat</title>
-    <link rel="stylesheet" href="styles.css">
+  <title>No se aun como llamarloa</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <input id="username" placeholder="user name">
-    <input id="room" placeholder="room number" type="number">
-    <button id="join room" onclick="join()">Join</button>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/client.js"></script>
+  <main id="login">
+    <input id="username" placeholder="user name" autocomplete="off" class="box">
+    <input id="room number" placeholder="room number" type="number" min="1" class="box">
+    <button id="join room" onclick="join()" class="box" role="button">Join</button>
+    <button id="create room" onclick="createRoom()" class="box"><span>Create room</span></button>
+  </main>
+  <main id="room main">
+
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
 </body>
 
 </html>
